@@ -82,14 +82,21 @@ export function cast(state: HookADuckState, x: number, y: number): boolean {
   return true;
 }
 
-/** Advances the game by `dt` seconds. */
-export function step(state: HookADuckState, dt: number): void {
+function moveDucks(state: HookADuckState, dt: number): void {
   for (const duck of state.ducks) {
     duck.angle = (duck.angle + DUCK_SPEED * dt) % (Math.PI * 2);
   }
+}
+
+/** Advances the game by `dt` seconds. */
+export function step(state: HookADuckState, dt: number): void {
+  // A hook that lands during this step catches from where the ducks are at
+  // the landing instant, however the frames happen to split the time.
+  const untilLanding = state.cast ? Math.min(dt, CAST_TIME - state.cast.age) : dt;
+  moveDucks(state, untilLanding);
 
   if (state.cast) {
-    state.cast.age += dt;
+    state.cast.age = untilLanding < dt ? CAST_TIME : state.cast.age + dt;
     if (state.cast.age >= CAST_TIME) {
       const duck = duckAt(state, state.cast.x, state.cast.y);
       if (duck) {
@@ -100,6 +107,8 @@ export function step(state: HookADuckState, dt: number): void {
       state.cast = null;
     }
   }
+
+  moveDucks(state, dt - untilLanding);
 
   for (const caught of state.catches) caught.age += dt;
   state.catches = state.catches.filter((c) => c.age < 0.8);

@@ -60,6 +60,18 @@ describe('hook a duck', () => {
     expect(state.ducks).toHaveLength(1);
   });
 
+  it('catches from where the ducks are when the hook lands, however the frames split', () => {
+    const state = oneDuck(5);
+    // Aim just inside reach of where the duck will be once the hook has dropped.
+    const ahead = duckPosition({ angle: Math.PI / 2 + DUCK_SPEED * CAST_TIME, value: 5 });
+    cast(state, ahead.x + HOOK_REACH - 1, ahead.y);
+    step(state, CAST_TIME - 0.01);
+    // This frame runs past the landing, and the duck drifts out of reach after it.
+    step(state, 0.02);
+    expect(state.score).toBe(5);
+    expect(state.cast).toBeNull();
+  });
+
   it('scores nothing when the hook lands in open water', () => {
     const state = oneDuck(5);
     const pos = duckPosition(state.ducks[0]);

@@ -30,6 +30,13 @@ describe('whack-a-mole', () => {
     expect(state.holes.filter((h) => h.moleLeft !== null)).toHaveLength(1);
   });
 
+  it('carries time past the spawn timer into the next countdown', () => {
+    const state = createState();
+    state.spawnIn = 0.01;
+    step(state, 0.05, first);
+    expect(state.spawnIn).toBeCloseTo(spawnInterval(state) - 0.04);
+  });
+
   it('drops a mole back down when its time is up', () => {
     const state = createState();
     state.spawnIn = 100;

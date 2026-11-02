@@ -100,7 +100,7 @@ export function step(state: WhackAMoleState, dt: number, random: () => number = 
       const hole = empty[Math.min(Math.floor(random() * empty.length), empty.length - 1)];
       hole.moleLeft = upTime(state);
     }
-    state.spawnIn = spawnInterval(state);
+    state.spawnIn += spawnInterval(state);
   }
 }
 

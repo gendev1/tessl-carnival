@@ -100,6 +100,15 @@ describe('plinko', () => {
     }
   });
 
+  it('never lets a disc balance on a peg it is dropped straight over', () => {
+    for (const x of new Set(createState().pegs.map((peg) => peg.x))) {
+      const state = createState();
+      dropDisc(state, x, () => 0.5);
+      settle(state);
+      expect(state.disc, `dropped at ${x}`).toBeUndefined();
+    }
+  });
+
   it('ends the round when the last disc lands', () => {
     const state = createState();
     for (let i = 0; i < DISCS_PER_ROUND; i++) {

@@ -107,9 +107,12 @@ export function bounceOffPeg(disc: Disc, peg: Peg): boolean {
   const distance = Math.hypot(dx, dy);
   const reach = DISC_RADIUS + PEG_RADIUS;
   if (distance >= reach) return false;
-  // Dead centre: tip it to one side rather than divide by zero.
-  const nx = distance === 0 ? 1 : dx / distance;
-  const ny = distance === 0 ? 0 : dy / distance;
+  // Straight above or below the peg: tip it to one side, or it could balance
+  // there forever (and at dead centre there is no direction at all).
+  const tipped = Math.abs(dx) < 0.5 ? (dx < 0 ? -0.5 : 0.5) : dx;
+  const length = Math.hypot(tipped, dy);
+  const nx = tipped / length;
+  const ny = dy / length;
   disc.x = peg.x + nx * reach;
   disc.y = peg.y + ny * reach;
   const along = disc.vx * nx + disc.vy * ny;

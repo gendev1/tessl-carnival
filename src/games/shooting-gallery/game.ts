@@ -12,6 +12,8 @@ const ROWS = [
 ];
 const TARGETS_PER_ROW = 3;
 const FLASH_SECONDS = 0.4;
+/** Longest stretch targets move in one step, so a slow frame doesn't teleport them. */
+const MAX_MOVE_SECONDS = 0.05;
 
 export interface Target {
   x: number;
@@ -107,15 +109,19 @@ export function fire(state: ShootingGalleryState, x: number, y: number): number 
   return points;
 }
 
-/** Advances the game by `dt` seconds. */
+/**
+ * Advances the game by `dt` seconds. The clock runs the full `dt`; targets
+ * move at most `MAX_MOVE_SECONDS` worth.
+ */
 export function step(state: ShootingGalleryState, dt: number): void {
   for (const flash of state.flashes) flash.age += dt;
   state.flashes = state.flashes.filter((f) => f.age < FLASH_SECONDS);
   if (state.phase !== 'playing') return;
 
   state.timeLeft = Math.max(0, state.timeLeft - dt);
+  const moveDt = Math.min(dt, MAX_MOVE_SECONDS);
   for (const target of state.targets) {
-    target.x += target.speed * dt;
+    target.x += target.speed * moveDt;
     if (target.x > WIDTH + target.radius) target.x = -target.radius;
     if (target.x < -target.radius) target.x = WIDTH + target.radius;
   }
@@ -234,6 +240,14 @@ export const shootingGallery: CarnivalGame = {
         y: ((event.clientY - rect.top) / rect.height) * HEIGHT,
       };
     };
+    // Record as soon as the round ends, so a restart or leaving the booth
+    // before the next frame can't lose the score.
+    const recordIfOver = () => {
+      if (state.phase === 'over' && !scoreRecorded) {
+        recordScore(shootingGallery.id, state.score);
+        scoreRecorded = true;
+      }
+    };
     const onMove = (event: PointerEvent) => Object.assign(aim, toCanvas(event));
     const onDown = (event: PointerEvent) => {
       Object.assign(aim, toCanvas(event));
@@ -242,6 +256,7 @@ export const shootingGallery: CarnivalGame = {
         scoreRecorded = false;
       } else {
         fire(state, aim.x, aim.y);
+        recordIfOver();
       }
     };
     canvas.addEventListener('pointermove', onMove);
@@ -250,14 +265,10 @@ export const shootingGallery: CarnivalGame = {
     let frame = 0;
     let last = performance.now();
     const loop = (time: number) => {
-      // Cap the step so a background tab doesn't teleport everything.
-      const dt = Math.min((time - last) / 1000, 0.05);
+      const dt = Math.max(0, (time - last) / 1000);
       last = time;
       step(state, dt);
-      if (state.phase === 'over' && !scoreRecorded) {
-        recordScore(shootingGallery.id, state.score);
-        scoreRecorded = true;
-      }
+      recordIfOver();
       draw(ctx, state, aim);
       frame = requestAnimationFrame(loop);
     };

@@ -108,6 +108,13 @@ describe('shooting gallery', () => {
     expect(isHit(440, 200, target)).toBe(false);
   });
 
+  it('runs the clock for the whole step but caps how far targets move', () => {
+    const state = withOneTarget();
+    step(state, 1);
+    expect(state.timeLeft).toBe(ROUND_SECONDS - 1);
+    expect(state.targets[0].x).toBeCloseTo(target.x + target.speed * 0.05);
+  });
+
   it('wraps targets around the booth', () => {
     const state = withOneTarget();
     state.targets[0].x = 800 + target.radius;
